@@ -38,11 +38,6 @@ const navigationItems = [
     icon: FileText,
   },
   {
-    title: "AI Assistant",
-    url: createPageUrl("AIAssistant"),
-    icon: MessageSquare,
-  },
-  {
     title: "Review & Calculate",
     url: createPageUrl("Review"),
     icon: CheckSquare,
@@ -56,6 +51,11 @@ const navigationItems = [
     title: "Documents",
     url: createPageUrl("Documents"),
     icon: Upload,
+  },
+  {
+    title: "AI Assistant",
+    url: createPageUrl("AIAssistant"),
+    icon: MessageSquare,
   },
 ];
 

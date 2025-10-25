@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { TaxReturn } from "@/entities/all";
+import { TaxReturn, TaxDocument } from "@/entities/all";
+import supabase from "@/integrations/supabaseClient.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +9,7 @@ import { FileText, Download, Printer, CheckCircle } from "lucide-react";
 export default function Forms() {
   const [taxReturn, setTaxReturn] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [documents, setDocuments] = useState([]);
 
   useEffect(() => {
     loadTaxReturn();
@@ -16,10 +18,21 @@ export default function Forms() {
   const loadTaxReturn = async () => {
     try {
       const currentYear = new Date().getFullYear();
-      const returns = await TaxReturn.filter({ tax_year: currentYear }, '-created_date', 1);
+      const { data: auth } = await supabase.auth.getUser();
+      const supaUser = auth?.user;
+      const filters = { tax_year: currentYear };
+      if (supaUser?.id) filters.user_id = supaUser.id;
+      const returns = await TaxReturn.filter(filters, '-updated_at', 1);
       
       if (returns.length > 0) {
-        setTaxReturn(returns[0]);
+        const tr = returns[0];
+        setTaxReturn(tr);
+        try {
+          const docs = await TaxDocument.list(tr.id);
+          setDocuments(docs || []);
+        } catch (e) {
+          console.warn('Unable to load documents:', e?.message || e);
+        }
       }
     } catch (error) {
       console.error("Error loading tax return:", error);
@@ -89,15 +102,48 @@ export default function Forms() {
                 <h3 className="text-xl font-semibold text-emerald-800">
                   Tax Return Completed
                 </h3>
-                <p className="text-emerald-700">
-                  Your {taxReturn.tax_year} tax forms are ready. Review and print below.
-                </p>
+                <p className="text-emerald-700">Your {taxReturn.tax_year} tax forms are ready. Review and print below.</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Federal Form 1040 */}
+        {/* Generated Documents */}
+        <Card className="mb-8 shadow-sm">
+          <CardHeader>
+            <CardTitle>Generated Documents</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {documents.length === 0 ? (
+              <div className="text-gray-600">No generated forms yet. Use Review to generate your tax forms.</div>
+            ) : (
+              documents.map((doc) => {
+                const bucket = import.meta.env.VITE_SUPABASE_BUCKET || 'storage';
+                const path = doc.file_url || doc.file_path || '';
+                const pub = supabase.storage.from(bucket).getPublicUrl(path);
+                const href = pub?.data?.publicUrl || '#';
+                return (
+                  <div key={doc.id} className="flex items-center justify-between border rounded-lg p-3">
+                    <div>
+                      <div className="font-medium">{doc.document_name || 'document'}</div>
+                      <div className="text-xs text-gray-500">{doc.document_type}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a href={href} target="_blank" rel="noreferrer">
+                        <Button variant="outline">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
+  {/* Federal Form 1040 (preview) */}
         <Card className="mb-8 shadow-lg border-2 border-gray-300 print:shadow-none print:border">
           <CardHeader className="bg-gray-50 border-b-2 border-gray-300">
             <CardTitle className="text-center">

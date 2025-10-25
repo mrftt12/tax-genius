@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TaxReturn } from "@/entities/all";
+import { TaxReturn, TaxDocument } from "@/entities/all";
 import supabase from "@/integrations/supabaseClient.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,68 @@ export default function Review() {
   const federalWithheld = Number(taxReturn.federal?.withholding || 0);
   const federalRefund = federalWithheld - federal.afterCredits;
   const caSDI = Number(taxReturn.ca?.sdi_withheld || 0);
+
+  const completeAndGenerate = async () => {
+    try {
+      // Update tax return status and calculated taxes
+      const updated = await taxReturn.update({
+        status: 'completed',
+        calculated_tax: {
+          federal_tax: federal.afterCredits,
+          state_tax: caTaxNet,
+          total_tax: federal.afterCredits + caTaxNet,
+          refund_owed: caRefund,
+          federal_refund_owed: federalRefund,
+          withholdings: { federal: federalWithheld, california: caWithheld },
+          breakdown: {
+            federal: { ...federal, taxableIncome: taxableIncomeFederal, deductionUsed: fedDeductionAmount },
+            california: { ...caState, taxableIncome: taxableIncomeCA, deductionUsed: caDeductionAmount }
+          }
+        }
+      });
+
+      // Prepare a simple JSON "tax form" artifact
+      const formPayload = {
+        version: 1,
+        type: 'tax_form',
+        tax_year: year,
+        taxpayer: updated.personal_info || {},
+        filing_status: filingStatus,
+        income: updated.income_info || {},
+        deductions: updated.deductions || {},
+        federal: {
+          taxable_income: taxableIncomeFederal,
+          tax_before_credits: federal.beforeCredits,
+          tax_after_credits: federal.afterCredits,
+          withholding: federalWithheld,
+          refund_or_due: federalRefund,
+        },
+        california: {
+          taxable_income: taxableIncomeCA,
+          tax_before_credits: caTaxRaw,
+          tax_after_credits: caTaxNet,
+          withholding: caWithheld,
+          refund_or_due: caRefund,
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(formPayload, null, 2)], { type: 'application/json' });
+      const fileName = `TaxForm_${year}_${Date.now()}.json`;
+      const file = new File([blob], fileName, { type: 'application/json' });
+      await TaxDocument.create({
+        file,
+        document_type: 'tax_form',
+        document_name: fileName,
+        tax_return_id: updated.id,
+      });
+
+      // Navigate to Tax Forms to view generated docs
+      window.location.href = createPageUrl('Forms');
+    } catch (e) {
+      console.error('Complete & generate failed:', e);
+      alert('There was a problem completing your return. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
@@ -231,6 +293,9 @@ export default function Review() {
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <Button className="w-full justify-start bg-emerald-600 hover:bg-emerald-700" onClick={completeAndGenerate}>
+                Complete Return & Generate Forms
+              </Button>
               <Link to={createPageUrl("Interview")}>
                 <Button variant="outline" className="w-full justify-start">
                   <Edit className="w-4 h-4 mr-2" />
