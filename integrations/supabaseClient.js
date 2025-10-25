@@ -13,6 +13,21 @@ const supabaseShim = {
     async getUser() {
       return { data: { user: null }, error: notConfiguredError() };
     },
+    async getSession() {
+      return { data: { session: null }, error: notConfiguredError() };
+    },
+    onAuthStateChange(_cb) {
+      return { data: { subscription: { unsubscribe() {} } }, error: null };
+    },
+    async signInWithPassword() {
+      return { data: { user: null, session: null }, error: notConfiguredError() };
+    },
+    async signUp() {
+      return { data: { user: null, session: null }, error: notConfiguredError() };
+    },
+    async signOut() {
+      return { error: notConfiguredError() };
+    },
   },
   from() {
     const err = notConfiguredError();
