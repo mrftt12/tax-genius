@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import supabase from "@/integrations/supabaseClient.js";
 import { getCAStandardDeductionByYear, calculateCAStateTaxByYear } from "@/src/tax/caByYear.js";
@@ -49,16 +48,29 @@ export default function Interview() {
 
   const initializeTaxReturn = async (year) => {
     try {
+      // reset local state first to avoid stale data bleed
+      setTaxReturn(null);
+      setFormData({
+        personal_info: {},
+        income_info: {},
+        deductions: { standard_deduction: true },
+        federal: { withholding: 0, adjustments: 0 },
+        ca: { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
+      });
+      setCurrentStep(0);
+
       const { data: auth } = await supabase.auth.getUser();
       const supaUser = auth?.user;
       const user = await User.me();
       const currentYear = year || new Date().getFullYear();
       const filters = { tax_year: currentYear };
       if (supaUser?.id) filters.user_id = supaUser.id;
-    const returns = await TaxReturn.filter(filters, '-created_at', 1);
+      // fetch more than 1 to decide whether to create fresh or reuse
+      const returns = await TaxReturn.filter(filters, '-updated_at');
       
       if (returns.length > 0) {
-        const existingReturn = returns[0];
+        // Prefer a non-completed return if any; else fall back to most recently updated
+        const existingReturn = returns.find(r => r.status !== 'completed') || returns[0];
         setTaxReturn(existingReturn);
         setFormData({
           personal_info: existingReturn.personal_info || {},

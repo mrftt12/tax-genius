@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TaxReturn } from "@/entities/all";
+import supabase from "@/integrations/supabaseClient.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -19,7 +20,11 @@ export default function Review() {
   const loadTaxReturn = async () => {
     try {
       const currentYear = new Date().getFullYear();
-      const returns = await TaxReturn.filter({ tax_year: currentYear }, '-created_at', 1);
+      const { data: auth } = await supabase.auth.getUser();
+      const supaUser = auth?.user;
+      const filters = { tax_year: currentYear };
+      if (supaUser?.id) filters.user_id = supaUser.id;
+      const returns = await TaxReturn.filter(filters, '-updated_at', 1);
       
       if (returns.length > 0) {
         setTaxReturn(returns[0]);

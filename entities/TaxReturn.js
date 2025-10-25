@@ -10,6 +10,7 @@ class TaxReturn {
     this.personal_info = data.personal_info || {};
     this.income_info = data.income_info || {};
     this.deductions = data.deductions || { standard_deduction: true };
+    this.federal = data.federal || { withholding: 0, adjustments: 0 };
     this.ca = data.ca || { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0 };
     this.calculated_tax = data.calculated_tax || {};
     this.created_at = data.created_at || new Date().toISOString();
@@ -69,6 +70,7 @@ class TaxReturn {
         personal_info: this.personal_info,
         income_info: this.income_info,
         deductions: this.deductions,
+        federal: this.federal,
         ca: this.ca,
         calculated_tax: this.calculated_tax,
         updated_at: this.updated_at,

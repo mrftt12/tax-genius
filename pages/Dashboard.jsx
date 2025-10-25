@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TaxReturn, User } from "@/entities/all";
+import supabase from "@/integrations/supabaseClient.js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -33,8 +34,13 @@ export default function Dashboard() {
     try {
       const user = await User.me();
       setCurrentUser(user);
-      
-  const returns = await TaxReturn.list('-created_at');
+      const { data: auth } = await supabase.auth.getUser();
+      const supaUser = auth?.user;
+      const filters = {};
+      if (supaUser?.id) filters.user_id = supaUser.id;
+      const returns = Object.keys(filters).length > 0
+        ? await TaxReturn.filter(filters, '-updated_at')
+        : await TaxReturn.list('-updated_at');
       setTaxReturns(returns);
     } catch (error) {
       console.error("Error loading data:", error);
