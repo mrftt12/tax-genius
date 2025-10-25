@@ -41,9 +41,19 @@ class TaxReturn {
 
   static async filter(filters, orderBy = '-created_at', limit = null) {
     let query = supabase.from('tax_returns').select('*');
-    Object.entries(filters || {}).forEach(([key, value]) => {
+    const f = { ...(filters || {}) };
+    // Special handling: include records with NULL user_id for backward compatibility
+    const userId = f.user_id;
+    if (userId !== undefined) {
+      delete f.user_id;
+    }
+    Object.entries(f).forEach(([key, value]) => {
       query = query.eq(key, value);
     });
+    if (userId !== undefined) {
+      // Supabase OR syntax to include rows with user_id IS NULL OR user_id == current user
+      query = query.or(`user_id.is.null,user_id.eq.${userId}`);
+    }
     const desc = orderBy?.startsWith('-');
     const col = orderBy?.replace('-', '') || 'created_at';
     query = query.order(col, { ascending: !desc });
