@@ -34,7 +34,7 @@ export default function Dashboard() {
       const user = await User.me();
       setCurrentUser(user);
       
-      const returns = await TaxReturn.list('-created_date');
+  const returns = await TaxReturn.list('-created_at');
       setTaxReturns(returns);
     } catch (error) {
       console.error("Error loading data:", error);

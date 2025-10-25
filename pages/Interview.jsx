@@ -160,8 +160,8 @@ export default function Interview() {
           refund_owed: refundOwed
         }
       });
-      setTaxReturn(updated);
-      navigate(createPageUrl("Forms"));
+  setTaxReturn(updated);
+  navigate(createPageUrl("Dashboard"));
     } catch (error) {
       console.error("Error completing return:", error);
     }
