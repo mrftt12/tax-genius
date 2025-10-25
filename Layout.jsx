@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   Calculator, 
@@ -23,6 +23,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/src/context/AuthProvider.jsx";
 
 const navigationItems = [
   {
@@ -59,6 +61,17 @@ const navigationItems = [
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (e) {
+      console.error('Logout failed', e);
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -126,6 +139,18 @@ export default function Layout({ children, currentPageName }) {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider px-3 py-3"
+                style={{color: 'var(--silver)'}}>
+                Account
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <div className="px-3 pb-2">
+                  <Button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700">Logout</Button>
+                </div>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </SidebarContent>
         </Sidebar>
 
@@ -140,6 +165,21 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex-1 overflow-auto">
             {children}
           </div>
+
+          <footer className="bg-white border-t border-gray-200 px-6 py-4">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-600">
+              <div>
+                © {new Date().getFullYear()} TaxGenius. All rights reserved.
+              </div>
+              <div className="flex items-center gap-4">
+                <Link to={createPageUrl('Terms')} className="hover:text-emerald-700">Terms & Conditions</Link>
+                <span className="text-gray-300">|</span>
+                <Link to={createPageUrl('Privacy')} className="hover:text-emerald-700">Privacy Policy</Link>
+                <span className="text-gray-300">|</span>
+                <Link to={createPageUrl('Contact')} className="hover:text-emerald-700">Contact</Link>
+              </div>
+            </div>
+          </footer>
         </main>
       </div>
     </SidebarProvider>

@@ -11,6 +11,9 @@ import Forms from '../pages/Forms.jsx';
 import Documents from '../pages/Documents.jsx';
 import Login from '../pages/Login.jsx';
 import { useAuth } from './context/AuthProvider.jsx';
+import Terms from '../pages/Terms.jsx';
+import Privacy from '../pages/Privacy.jsx';
+import Contact from '../pages/Contact.jsx';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -81,6 +84,36 @@ function App() {
             <Protected>
               <Layout currentPageName="AI Assistant">
                 <AIAssistant />
+              </Layout>
+            </Protected>
+          }
+        />
+        <Route
+          path="/Terms"
+          element={
+            <Protected>
+              <Layout currentPageName="Terms">
+                <Terms />
+              </Layout>
+            </Protected>
+          }
+        />
+        <Route
+          path="/Privacy"
+          element={
+            <Protected>
+              <Layout currentPageName="Privacy">
+                <Privacy />
+              </Layout>
+            </Protected>
+          }
+        />
+        <Route
+          path="/Contact"
+          element={
+            <Protected>
+              <Layout currentPageName="Contact">
+                <Contact />
               </Layout>
             </Protected>
           }
