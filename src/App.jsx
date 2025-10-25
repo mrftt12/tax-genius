@@ -46,16 +46,6 @@ function App() {
           }
         />
         <Route
-          path="/AIAssistant"
-          element={
-            <Protected>
-              <Layout currentPageName="AI Assistant">
-                <AIAssistant />
-              </Layout>
-            </Protected>
-          }
-        />
-        <Route
           path="/Review"
           element={
             <Protected>
@@ -81,6 +71,16 @@ function App() {
             <Protected>
               <Layout currentPageName="Documents">
                 <Documents />
+              </Layout>
+            </Protected>
+          }
+        />
+        <Route
+          path="/AIAssistant"
+          element={
+            <Protected>
+              <Layout currentPageName="AI Assistant">
+                <AIAssistant />
               </Layout>
             </Protected>
           }
