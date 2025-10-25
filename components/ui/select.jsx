@@ -50,13 +50,22 @@ SelectTrigger.displayName = "SelectTrigger";
 
 export function SelectValue({ placeholder, ...props }) {
   const { selectedValue } = React.useContext(SelectContext);
-  const selectedChild = React.Children.toArray(props.children).find(
-    (child) => child.props?.value === selectedValue
+  const childrenArray = React.Children.toArray(props.children);
+  const selectedChild = childrenArray.find(
+    (child) => child?.props?.value === selectedValue
   );
+
+  // If no children were provided to SelectValue (common usage),
+  // fall back to showing the selectedValue itself.
+  const label = selectedChild
+    ? selectedChild.props.children
+    : (childrenArray.length === 0 && selectedValue)
+      ? selectedValue
+      : placeholder;
 
   return (
     <span {...props}>
-      {selectedChild ? selectedChild.props.children : placeholder}
+      {label}
     </span>
   );
 }
