@@ -61,7 +61,6 @@ export default function Interview() {
 
       const { data: auth } = await supabase.auth.getUser();
       const supaUser = auth?.user;
-      const user = await User.me();
       const currentYear = year || new Date().getFullYear();
       const filters = { tax_year: currentYear };
       if (supaUser?.id) filters.user_id = supaUser.id;
@@ -79,30 +78,7 @@ export default function Interview() {
           federal: existingReturn.federal || { withholding: 0, adjustments: 0 },
           ca: existingReturn.ca || { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
         });
-      } else {
-        const name = user.name || '';
-        const firstName = name.split(' ')[0] || '';
-        const lastName = name.split(' ').slice(1).join(' ') || '';
-        const payload = {
-          tax_year: currentYear,
-          state: 'CA',
-          status: 'draft',
-          personal_info: {
-            first_name: firstName,
-            last_name: lastName
-          }
-        };
-        if (supaUser?.id) payload.user_id = supaUser.id;
-        const newReturn = await TaxReturn.create(payload);
-        setTaxReturn(newReturn);
-        setFormData({
-          personal_info: newReturn.personal_info || {},
-          income_info: {},
-          deductions: { standard_deduction: true },
-          federal: { withholding: 0, adjustments: 0 },
-          ca: { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
-        });
-      }
+      } // else: do not auto-create; wait until user advances and we will lazily create
     } catch (error) {
       console.error("Error initializing tax return:", error);
     } finally {
@@ -126,12 +102,29 @@ export default function Interview() {
   };
 
   const saveProgress = async () => {
-    if (!taxReturn) return;
-    
     setIsSaving(true);
     try {
+      let workingReturn = taxReturn;
+      if (!workingReturn) {
+        // Lazily create a return for the selected year on first save
+        const { data: auth } = await supabase.auth.getUser();
+        const supaUser = auth?.user;
+        const me = await User.me();
+        const name = me.name || '';
+        const firstName = name.split(' ')[0] || '';
+        const lastName = name.split(' ').slice(1).join(' ') || '';
+        const payload = {
+          tax_year: selectedYear,
+          state: 'CA',
+          status: 'draft',
+          personal_info: { first_name: firstName, last_name: lastName },
+        };
+        if (supaUser?.id) payload.user_id = supaUser.id;
+        workingReturn = await TaxReturn.create(payload);
+        setTaxReturn(workingReturn);
+      }
       const updatedStatus = currentStep === STEPS.length - 1 ? 'review' : 'in_progress';
-      const updated = await taxReturn.update({
+      const updated = await workingReturn.update({
         ...formData,
         status: updatedStatus,
         tax_year: selectedYear,
@@ -144,10 +137,26 @@ export default function Interview() {
   };
 
   const completeReturn = async () => {
-    if (!taxReturn) return;
-    
     setIsSaving(true);
     try {
+      let workingReturn = taxReturn;
+      if (!workingReturn) {
+        const { data: auth } = await supabase.auth.getUser();
+        const supaUser = auth?.user;
+        const me = await User.me();
+        const name = me.name || '';
+        const firstName = name.split(' ')[0] || '';
+        const lastName = name.split(' ').slice(1).join(' ') || '';
+        const payload = {
+          tax_year: selectedYear,
+          state: 'CA',
+          status: 'draft',
+          personal_info: { first_name: firstName, last_name: lastName },
+        };
+        if (supaUser?.id) payload.user_id = supaUser.id;
+        workingReturn = await TaxReturn.create(payload);
+        setTaxReturn(workingReturn);
+      }
       const totalIncome = Object.values(formData.income_info || {}).reduce((sum, val) => sum + (val || 0), 0);
       const filingStatus = formData.personal_info?.filing_status || 'single';
       // Deductions (generic itemized toggle, but standard differs by jurisdiction)
@@ -174,7 +183,7 @@ export default function Interview() {
   const refundOwed = withholdingCA - caTax; // positive => refund; negative => due (CA only for backward compat)
   const federalRefundOwed = withholdingFed - federal.afterCredits;
       
-      const updated = await taxReturn.update({
+      const updated = await workingReturn.update({
         ...formData,
         status: 'completed',
         tax_year: selectedYear,
