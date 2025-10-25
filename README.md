@@ -17,16 +17,22 @@ npm install
 
 ### 2. Environment Configuration
 
-Copy the example environment file and configure it:
+- Copy the example file to start local config:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Edit `.env` and add your configuration values:
-- `VITE_API_URL`: Your backend API URL (default: http://localhost:8000/api)
-- `VITE_AI_API_KEY`: Your AI service API key (if using AI features)
-- Other configuration as needed
+- Edit `.env.local` and add your configuration values:
+	- `VITE_API_URL`: Your backend API URL (default: http://localhost:8000/api)
+	- `VITE_AI_API_KEY`: Your AI service API key (if using AI features)
+	- `VITE_SUPABASE_URL`: Your Supabase project URL
+	- `VITE_SUPABASE_ANON_KEY`: Supabase anon (public) key
+	- `VITE_SUPABASE_BUCKET`: Document storage bucket (default: `storage`)
+
+Important:
+- Do NOT commit secrets. This repo ignores `.env`, `.env.local`, and other env variants via `.gitignore`.
+- Never place Supabase `service_role` or storage access keys in client env files. Those belong on a trusted server or Edge Function.
 
 ### 3. Start Development Server
 
@@ -34,7 +40,7 @@ Edit `.env` and add your configuration values:
 npm run dev
 ```
 
-The application will start at `http://localhost:3000`
+The application will start at `http://localhost:3333` (or the next available port).
 
 ## Available Scripts
 

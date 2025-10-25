@@ -1,0 +1,95 @@
+{
+  "2020": {
+    "brackets": {},
+    "standardDeduction": {},
+    "personalExemptionCredit": {},
+    "rentersCreditAmount": {},
+    "rentersCreditIncomeLimit": {}
+  },
+  "2021": {
+    "brackets": {},
+    "standardDeduction": {},
+    "personalExemptionCredit": {},
+    "rentersCreditAmount": {},
+    "rentersCreditIncomeLimit": {}
+  },
+  "2022": {
+    "brackets": {},
+    "standardDeduction": {},
+    "personalExemptionCredit": {},
+    "rentersCreditAmount": {},
+    "rentersCreditIncomeLimit": {}
+  },
+  "2023": {
+    "brackets": {},
+    "standardDeduction": {},
+    "personalExemptionCredit": {},
+    "rentersCreditAmount": {},
+    "rentersCreditIncomeLimit": {}
+  },
+  "2024": {
+    "brackets": {
+      "single": [
+        { "upTo": 10412, "rate": 0.01 },
+        { "upTo": 24684, "rate": 0.02 },
+        { "upTo": 38959, "rate": 0.04 },
+        { "upTo": 54081, "rate": 0.06 },
+        { "upTo": 68350, "rate": 0.08 },
+        { "upTo": 349137, "rate": 0.093 },
+        { "upTo": 418961, "rate": 0.1023 },
+        { "upTo": 698271, "rate": 0.113 },
+        { "upTo": null, "rate": 0.123 }
+      ],
+      "married_joint": [
+        { "upTo": 20824, "rate": 0.01 },
+        { "upTo": 49368, "rate": 0.02 },
+        { "upTo": 77918, "rate": 0.04 },
+        { "upTo": 108162, "rate": 0.06 },
+        { "upTo": 136700, "rate": 0.08 },
+        { "upTo": 698274, "rate": 0.093 },
+        { "upTo": 837922, "rate": 0.1023 },
+        { "upTo": 1396542, "rate": 0.113 },
+        { "upTo": null, "rate": 0.123 }
+      ],
+      "head_household": [
+        { "upTo": 20824, "rate": 0.01 },
+        { "upTo": 32815, "rate": 0.02 },
+        { "upTo": 42792, "rate": 0.04 },
+        { "upTo": 54081, "rate": 0.06 },
+        { "upTo": 68350, "rate": 0.08 },
+        { "upTo": 349137, "rate": 0.093 },
+        { "upTo": 418961, "rate": 0.1023 },
+        { "upTo": 698271, "rate": 0.113 },
+        { "upTo": null, "rate": 0.123 }
+      ]
+    },
+    "standardDeduction": {
+      "single": 5363,
+      "married_separate": 5363,
+      "married_joint": 10726,
+      "head_household": 10726,
+      "qualifying_widow": 10726
+    },
+    "personalExemptionCredit": {
+      "single": 146,
+      "married_separate": 146,
+      "married_joint": 292,
+      "head_household": 292,
+      "qualifying_widow": 292
+    },
+    "rentersCreditAmount": {
+      "single": 60,
+      "married_separate": 60,
+      "married_joint": 120,
+      "head_household": 120,
+      "qualifying_widow": 120
+    },
+    "rentersCreditIncomeLimit": {
+      "single": null,
+      "married_separate": null,
+      "married_joint": null,
+      "head_household": null,
+      "qualifying_widow": null
+    }
+  }
+}

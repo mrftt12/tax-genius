@@ -2,6 +2,8 @@
 // NOTE: 2024 values are from centralized module; prior years currently use 2024 values as placeholders.
 // Replace the bracket and deduction tables with official FTB schedules per year as needed.
 
+import RAW_TABLES from './ca_data.json';
+
 const YEARS = [2020, 2021, 2022, 2023, 2024];
 
 const BASE_2024 = {
@@ -70,9 +72,43 @@ const BASE_2024 = {
   },
 };
 
-// For now, reuse 2024 across 2020–2023; replace with official tables later
+// Merge JSON-driven tables, with 2024 as baseline fallback
+const fromJson = Object.fromEntries(
+  Object.entries(RAW_TABLES).map(([year, tbl]) => {
+    // normalize Infinity/null in JSON
+    const norm = (v) => (v === null ? Infinity : v);
+    const normalizeBrackets = (b) =>
+      Object.fromEntries(
+        Object.entries(b || {}).map(([status, arr]) => [
+          status,
+          (arr || []).map(({ upTo, rate }) => ({ upTo: upTo === null ? Infinity : upTo, rate })),
+        ])
+      );
+    return [
+      Number(year),
+      {
+        brackets: normalizeBrackets(tbl.brackets),
+        standardDeduction: tbl.standardDeduction || {},
+        personalExemptionCredit: tbl.personalExemptionCredit || {},
+        rentersCreditAmount: tbl.rentersCreditAmount || {},
+        rentersCreditIncomeLimit: Object.fromEntries(
+          Object.entries(tbl.rentersCreditIncomeLimit || {}).map(([k, v]) => [k, norm(v)])
+        ),
+      },
+    ];
+  })
+);
+
 const TABLES = YEARS.reduce((acc, y) => {
-  acc[y] = BASE_2024;
+  const base = BASE_2024;
+  const override = fromJson[y] || {};
+  acc[y] = {
+    brackets: { ...base.brackets, ...(override.brackets || {}) },
+    standardDeduction: { ...base.standardDeduction, ...(override.standardDeduction || {}) },
+    personalExemptionCredit: { ...base.personalExemptionCredit, ...(override.personalExemptionCredit || {}) },
+    rentersCreditAmount: { ...base.rentersCreditAmount, ...(override.rentersCreditAmount || {}) },
+    rentersCreditIncomeLimit: { ...base.rentersCreditIncomeLimit, ...(override.rentersCreditIncomeLimit || {}) },
+  };
   return acc;
 }, {});
 
