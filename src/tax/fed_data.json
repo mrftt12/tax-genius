@@ -1,0 +1,103 @@
+{
+  "2020": {
+    "standardDeduction": {
+      "single": 12400,
+      "married_separate": 12400,
+      "married_joint": 24800,
+      "head_household": 18650,
+      "qualifying_widow": 24800
+    }
+  },
+  "2021": {
+    "standardDeduction": {
+      "single": 12550,
+      "married_separate": 12550,
+      "married_joint": 25100,
+      "head_household": 18800,
+      "qualifying_widow": 25100
+    }
+  },
+  "2022": {
+    "standardDeduction": {
+      "single": 12950,
+      "married_separate": 12950,
+      "married_joint": 25900,
+      "head_household": 19400,
+      "qualifying_widow": 25900
+    }
+  },
+  "2023": {
+    "standardDeduction": {
+      "single": 13850,
+      "married_separate": 13850,
+      "married_joint": 27700,
+      "head_household": 20800,
+      "qualifying_widow": 27700
+    }
+  },
+  "2024": {
+    "brackets": {
+      "single": [
+        { "upTo": 11600, "rate": 0.10 },
+        { "upTo": 47150, "rate": 0.12 },
+        { "upTo": 100525, "rate": 0.22 },
+        { "upTo": 191950, "rate": 0.24 },
+        { "upTo": 243725, "rate": 0.32 },
+        { "upTo": 609350, "rate": 0.35 },
+        { "upTo": null, "rate": 0.37 }
+      ],
+      "married_joint": [
+        { "upTo": 23200, "rate": 0.10 },
+        { "upTo": 94300, "rate": 0.12 },
+        { "upTo": 201050, "rate": 0.22 },
+        { "upTo": 383900, "rate": 0.24 },
+        { "upTo": 487450, "rate": 0.32 },
+        { "upTo": 731200, "rate": 0.35 },
+        { "upTo": null, "rate": 0.37 }
+      ],
+      "head_household": [
+        { "upTo": 16550, "rate": 0.10 },
+        { "upTo": 63100, "rate": 0.12 },
+        { "upTo": 100500, "rate": 0.22 },
+        { "upTo": 191950, "rate": 0.24 },
+        { "upTo": 243700, "rate": 0.32 },
+        { "upTo": 609350, "rate": 0.35 },
+        { "upTo": null, "rate": 0.37 }
+      ],
+      "married_separate": [
+        { "upTo": 11600, "rate": 0.10 },
+        { "upTo": 47150, "rate": 0.12 },
+        { "upTo": 100525, "rate": 0.22 },
+        { "upTo": 191950, "rate": 0.24 },
+        { "upTo": 243725, "rate": 0.32 },
+        { "upTo": 365600, "rate": 0.35 },
+        { "upTo": null, "rate": 0.37 }
+      ],
+      "qualifying_widow": [
+        { "upTo": 23200, "rate": 0.10 },
+        { "upTo": 94300, "rate": 0.12 },
+        { "upTo": 201050, "rate": 0.22 },
+        { "upTo": 383900, "rate": 0.24 },
+        { "upTo": 487450, "rate": 0.32 },
+        { "upTo": 731200, "rate": 0.35 },
+        { "upTo": null, "rate": 0.37 }
+      ]
+    },
+    "standardDeduction": {
+      "single": 14600,
+      "married_separate": 14600,
+      "married_joint": 29200,
+      "head_household": 21900,
+      "qualifying_widow": 29200
+    }
+  },
+  "2025": {
+    "standardDeduction": {
+      "single": 14600,
+      "married_separate": 14600,
+      "married_joint": 29200,
+      "head_household": 21900,
+      "qualifying_widow": 29200
+    }
+  }
+}

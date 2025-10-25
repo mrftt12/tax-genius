@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import supabase from "@/integrations/supabaseClient.js";
 import { getCAStandardDeductionByYear, calculateCAStateTaxByYear } from "@/src/tax/caByYear.js";
+import { getFederalStandardDeductionByYear, calculateFederalTaxByYear } from "@/src/tax/federalByYear.js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import PersonalInfoStep from "../components/interview/PersonalStep.jsx";
@@ -16,11 +17,13 @@ import IncomeStep from "../components/interview/IncomeStep.jsx";
 import DeductionsStep from "../components/interview/DeductionStep.jsx";
 import ReviewStep from "../components/interview/ReviewStep.jsx";
 import CaliforniaStep from "../components/interview/CaliforniaStep.jsx";
+import FederalStep from "../components/interview/FederalStep.jsx";
 
 const STEPS = [
   { id: 'personal', title: 'Personal Information', description: 'Basic info and filing status' },
   { id: 'income', title: 'Income Sources', description: 'W-2s, 1099s, and other income' },
   { id: 'deductions', title: 'Deductions & Credits', description: 'Itemized or standard deductions' },
+  { id: 'federal', title: 'Federal', description: 'Federal withholding and adjustments' },
   { id: 'california', title: 'California State', description: 'CA-specific info (withholding, residency)' },
   { id: 'review', title: 'Review', description: 'Verify all information' }
 ];
@@ -33,7 +36,8 @@ export default function Interview() {
     personal_info: {},
     income_info: {},
     deductions: { standard_deduction: true },
-  ca: { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
+    federal: { withholding: 0, adjustments: 0 },
+    ca: { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +64,7 @@ export default function Interview() {
           personal_info: existingReturn.personal_info || {},
           income_info: existingReturn.income_info || {},
           deductions: existingReturn.deductions || { standard_deduction: true },
+          federal: existingReturn.federal || { withholding: 0, adjustments: 0 },
           ca: existingReturn.ca || { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
         });
       } else {
@@ -82,6 +87,7 @@ export default function Interview() {
           personal_info: newReturn.personal_info || {},
           income_info: {},
           deductions: { standard_deduction: true },
+          federal: { withholding: 0, adjustments: 0 },
           ca: { resident: true, months_in_ca: 12, ca_withholding: 0, sdi_withheld: 0, adjustments: 0, renters_credit: false }
         });
       }
@@ -132,32 +138,45 @@ export default function Interview() {
     try {
       const totalIncome = Object.values(formData.income_info || {}).reduce((sum, val) => sum + (val || 0), 0);
       const filingStatus = formData.personal_info?.filing_status || 'single';
-      const standardDed = getCAStandardDeductionByYear(selectedYear, filingStatus);
+      // Deductions (generic itemized toggle, but standard differs by jurisdiction)
+      const caStdDed = getCAStandardDeductionByYear(selectedYear, filingStatus);
+      const fedStdDed = getFederalStandardDeductionByYear(selectedYear, filingStatus);
       const itemized = Object.entries(formData.deductions || {})
         .filter(([k]) => k !== 'standard_deduction')
         .reduce((sum, [_, v]) => sum + (typeof v === 'number' ? v : 0), 0);
       const useStd = formData.deductions?.standard_deduction !== false;
-      const deductionAmount = useStd ? standardDed : itemized;
+      const caDeductionAmount = useStd ? caStdDed : itemized;
+      const fedDeductionAmount = useStd ? fedStdDed : itemized;
       
-      const taxableIncome = Math.max(0, totalIncome - deductionAmount + (formData.ca?.adjustments || 0));
-      const federalTax = Math.round(taxableIncome * 0.22); // simplified
-      const caState = calculateCAStateTaxByYear(selectedYear, taxableIncome, filingStatus, {
+  const taxableIncomeFederal = Math.max(0, totalIncome - fedDeductionAmount + (formData.federal?.adjustments || 0));
+      const taxableIncomeCA = Math.max(0, totalIncome - caDeductionAmount + (formData.ca?.adjustments || 0));
+
+      const federal = calculateFederalTaxByYear(selectedYear, taxableIncomeFederal, filingStatus);
+      const caState = calculateCAStateTaxByYear(selectedYear, taxableIncomeCA, filingStatus, {
         isRenter: !!formData.ca?.renters_credit,
         estimatedAGI: totalIncome, // rough proxy
       });
-      const caTax = caState.afterCredits;
-      const withholding = Number(formData.ca?.ca_withholding || 0);
-      const refundOwed = withholding - caTax; // positive => refund; negative => due
+  const caTax = caState.afterCredits;
+  const withholdingCA = Number(formData.ca?.ca_withholding || 0);
+  const withholdingFed = Number(formData.federal?.withholding || 0);
+  const refundOwed = withholdingCA - caTax; // positive => refund; negative => due (CA only for backward compat)
+  const federalRefundOwed = withholdingFed - federal.afterCredits;
       
       const updated = await taxReturn.update({
         ...formData,
         status: 'completed',
         tax_year: selectedYear,
         calculated_tax: {
-          federal_tax: federalTax,
+          federal_tax: federal.afterCredits,
           state_tax: caTax,
-          total_tax: federalTax + caTax,
-          refund_owed: refundOwed
+          total_tax: federal.afterCredits + caTax,
+          refund_owed: refundOwed,
+          federal_refund_owed: federalRefundOwed,
+          withholdings: { federal: withholdingFed, california: withholdingCA },
+          breakdown: {
+            federal: { ...federal, taxableIncome: taxableIncomeFederal, deductionUsed: fedDeductionAmount },
+            california: { ...caState, taxableIncome: taxableIncomeCA, deductionUsed: caDeductionAmount }
+          }
         }
       });
   setTaxReturn(updated);
@@ -187,6 +206,8 @@ export default function Interview() {
         return <DeductionsStep data={formData.deductions} onChange={(data) => updateFormData('deductions', data)} />;
       case 'california':
         return <CaliforniaStep data={formData.ca} onChange={(data) => updateFormData('ca', data)} />;
+      case 'federal':
+        return <FederalStep data={formData.federal} onChange={(data) => updateFormData('federal', data)} />;
       case 'review':
         return <ReviewStep formData={formData} taxReturn={taxReturn} />;
       default:
@@ -219,7 +240,7 @@ export default function Interview() {
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[2024, 2023, 2022, 2021, 2020].map(y => (
+                  {[2025, 2024, 2023, 2022, 2021, 2020].map(y => (
                     <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                   ))}
                 </SelectContent>

@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Calculator, FileText, DollarSign, CheckCircle, Edit, Trash2 } from "lucide-react";
 import { getCAStandardDeductionByYear, calculateCAStateTaxByYear } from "@/src/tax/caByYear.js";
+import { getFederalStandardDeductionByYear, calculateFederalTaxByYear } from "@/src/tax/federalByYear.js";
 
 export default function Review() {
   const [taxReturn, setTaxReturn] = useState(null);
@@ -74,21 +75,28 @@ export default function Review() {
   const filingStatus = taxReturn.personal_info?.filing_status || 'single';
   const year = taxReturn.tax_year || new Date().getFullYear();
   const caStd = getCAStandardDeductionByYear(year, filingStatus);
+  const fedStd = getFederalStandardDeductionByYear(year, filingStatus);
   const itemized = Object.entries(taxReturn.deductions || {})
     .filter(([k]) => k !== 'standard_deduction')
     .reduce((sum, [_, v]) => sum + (typeof v === 'number' ? v : 0), 0);
   const useStd = taxReturn.deductions?.standard_deduction !== false;
-  const deductionAmount = useStd ? caStd : itemized;
+  const caDeductionAmount = useStd ? caStd : itemized;
+  const fedDeductionAmount = useStd ? fedStd : itemized;
   const caAdj = Number(taxReturn.ca?.adjustments || 0);
-  const taxableIncome = Math.max(0, totalIncome - deductionAmount + caAdj);
+  const taxableIncomeCA = Math.max(0, totalIncome - caDeductionAmount + caAdj);
+  const taxableIncomeFederal = Math.max(0, totalIncome - fedDeductionAmount);
   const caWithheld = Number(taxReturn.ca?.ca_withholding || 0);
-  const caState = calculateCAStateTaxByYear(year, taxableIncome, filingStatus, {
+  const caState = calculateCAStateTaxByYear(year, taxableIncomeCA, filingStatus, {
     isRenter: !!taxReturn.ca?.renters_credit,
     estimatedAGI: totalIncome,
   });
   const caTaxRaw = caState.beforeCredits;
   const caTaxNet = caState.afterCredits;
   const caRefund = caWithheld - caTaxNet; // positive => refund, negative => due
+  const federal = calculateFederalTaxByYear(year, taxableIncomeFederal, filingStatus);
+  const federalWithheld = Number(taxReturn.federal?.withholding || 0);
+  const federalRefund = federalWithheld - federal.afterCredits;
+  const caSDI = Number(taxReturn.ca?.sdi_withheld || 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
@@ -125,7 +133,7 @@ export default function Review() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900">
-                ${deductionAmount.toLocaleString()}
+                ${caDeductionAmount.toLocaleString()}
               </div>
             </CardContent>
           </Card>
@@ -138,14 +146,47 @@ export default function Review() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-emerald-700">
-                ${taxableIncome.toLocaleString()}
-              </div>
+              <div className="text-3xl font-bold text-emerald-700">${taxableIncomeCA.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Federal Tax Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Federal Tax (before credits)</span>
+                <span className="font-semibold text-lg">${federal.beforeCredits.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Nonrefundable Credits</span>
+                <span className="font-semibold text-lg">-${federal.nonrefundableCredits.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Federal Tax (after credits)</span>
+                <span className="font-semibold text-lg">${federal.afterCredits.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Federal Deduction Used</span>
+                <span className="font-semibold text-lg">${fedDeductionAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Taxable Income (Federal)</span>
+                <span className="font-semibold text-lg">${taxableIncomeFederal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b">
+                <span className="text-gray-600">Federal Withholding</span>
+                <span className="font-semibold text-lg">-${federalWithheld.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between py-4 bg-emerald-50 px-4 rounded-lg">
+                <span className="font-bold text-lg">{federalRefund >= 0 ? 'Estimated Federal Refund' : 'Federal Amount Due'}</span>
+                <span className="font-bold text-2xl text-emerald-700">${Math.abs(federalRefund).toLocaleString()}</span>
+              </div>
+            </CardContent>
+          </Card>
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>California Tax Summary</CardTitle>
