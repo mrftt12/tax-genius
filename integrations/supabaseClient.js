@@ -1,7 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.EXPO_PUBLIC_SUPABASE_KEY;
+function sanitizeEnv(value) {
+  if (!value) return '';
+  const v = String(value).trim();
+  // Netlify doesn't interpolate ${VAR} patterns; treat them as missing
+  if (v.startsWith('${') || v.includes('undefined') || v.includes('null')) return '';
+  return v;
+}
+
+let supabaseUrl = sanitizeEnv(import.meta.env.VITE_SUPABASE_URL) || sanitizeEnv(import.meta.env.EXPO_PUBLIC_SUPABASE_URL);
+let supabaseAnonKey = sanitizeEnv(import.meta.env.VITE_SUPABASE_ANON_KEY) || sanitizeEnv(import.meta.env.EXPO_PUBLIC_SUPABASE_KEY);
+
+function isValidHttpUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
 function notConfiguredError() {
   return new Error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Configure env vars in your hosting provider.');
@@ -57,8 +74,8 @@ const supabaseShim = {
 };
 
 let client;
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Using no-op client to keep the app running.');
+if (!supabaseUrl || !supabaseAnonKey || !isValidHttpUrl(supabaseUrl)) {
+  console.error('[Supabase] Invalid or missing configuration. Expected VITE_SUPABASE_URL (https://...supabase.co) and VITE_SUPABASE_ANON_KEY (anon key). Using no-op client.');
   client = supabaseShim;
 } else {
   client = createClient(supabaseUrl, supabaseAnonKey);
